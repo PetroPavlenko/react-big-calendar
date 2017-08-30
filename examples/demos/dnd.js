@@ -39,10 +39,11 @@ class Dnd extends React.Component {
     return (
       <DragAndDropCalendar
         selectable
+        allDay={false}
         events={this.state.events}
         onEventDrop={this.moveEvent}
-        defaultView='week'
-        defaultDate={new Date(2015, 3, 12)}
+        defaultView='day'
+        defaultDate={new Date(2017, 3, 12)}
       />
     )
   }
