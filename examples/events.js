@@ -1,19 +1,19 @@
 export default [
   {
     'title': 'Long Event',
-    'start': new Date(2017, 3, 7),
-    'end': new Date(2017, 3, 10)
+    'start': new Date(2017, 3, 10, 30, 0, 0),
+    'end': new Date(2017, 3, 10, 30, 10, 0),
   },
   {
     title: 'Conference',
-    start: new Date(2017, 3, 11),
-    end: new Date(2017, 3, 13),
+    start: new Date(2017, 3, 11, 30, 0, 0),
+    end: new Date(2017, 3, 11, 30, 10, 0),
     desc: 'Big conference for important people'
   },
   {
     title: 'Telemed pre-call',
     start: new Date(2017, 3, 12, 10, 30, 0, 0),
-    end: new Date(2017, 3, 12, 12, 30, 0, 0),
+    end: new Date(2017, 3, 12, 11, 0, 0, 0),
     desc: 'Pre-meeting meeting, to prepare for the meeting'
   },
   {

@@ -141,6 +141,7 @@ export default class TimeGrid extends Component {
       , width
       , startAccessor
       , endAccessor
+      , skipAllDay
       , allDayAccessor } = this.props;
 
     width = width || this.state.gutterWidth;
@@ -168,16 +169,19 @@ export default class TimeGrid extends Component {
         else
           rangeEvents.push(event)
       }
-    })
-
-    allDayEvents.sort((a, b) => sortEvents(a, b, this.props))
-
-    let gutterRef = ref => this._gutters[1] = ref && findDOMNode(ref);
+    });
+    if (skipAllDay) {
+      rangeEvents = rangeEvents.concat(allDayEvents);
+    }
+    else {
+      allDayEvents.sort((a, b) => sortEvents(a, b, this.props))
+    }
+    let gutterRef = ref => this._gutters[0] = ref && findDOMNode(ref);
 
     return (
       <div className='rbc-time-view'>
 
-        {this.renderHeader(range, allDayEvents, width)}
+        {this.renderHeader(range, allDayEvents, width, skipAllDay)}
 
         <div ref='content' className='rbc-time-content'>
           <div ref='timeIndicator' className='rbc-current-time-indicator' />
@@ -225,7 +229,7 @@ export default class TimeGrid extends Component {
     })
   }
 
-  renderHeader(range, events, width) {
+  renderHeader(range, events, width, skipAllDay) {
     let { messages, rtl, selectable, components, now } = this.props;
     let { isOverflowing } = this.state || {};
 
@@ -249,7 +253,7 @@ export default class TimeGrid extends Component {
           />
           { this.renderHeaderCells(range) }
         </div>
-        <div className='rbc-row'>
+        {!skipAllDay && <div className='rbc-row'>
           <div
             ref={ref => this._gutters[0] = ref}
             className='rbc-label rbc-header-gutter'
@@ -277,7 +281,7 @@ export default class TimeGrid extends Component {
             selected={this.props.selected}
             onSelect={this.handleSelectEvent}
           />
-        </div>
+        </div>}
       </div>
     )
   }
