@@ -4,7 +4,9 @@ import HTML5Backend from 'react-dnd-html5-backend'
 import {DragDropContext} from 'react-dnd'
 import ContentLoader, {Rect} from 'react-content-loader'
 import _ from 'lodash';
-import $ from "jquery";
+import $ from 'jquery';
+import moment from 'moment';
+
 window.$ = $;
 window.jquery = $;
 import toastr from 'toastr';
@@ -12,12 +14,16 @@ import toastr from 'toastr';
 import BigCalendar from 'react-big-calendar'
 import dateMath from 'date-arithmetic';
 
-import dates from '../../src/utils/dates';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
-
+import {post} from './fetcher';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.less';
 
 const DragAndDropCalendar = withDragAndDrop(BigCalendar);
+
+const START_DATE = new Date(2017, 3, 12);
+const START_TYPE = 'day';
+const REQUEST_TYPE = 'DD/MM/YYYY';
+const CREATE_TYPE = 'YYYY-MM-DD';
 
 class Dnd extends React.Component {
   constructor(props) {
@@ -27,15 +33,42 @@ class Dnd extends React.Component {
       isLoading: true
     }
 
-    //get request
-    this.moveEvent = this.moveEvent.bind(this)
-    setTimeout(() => {
+    this.calendarState = {
+      date: START_DATE,
+      view: START_TYPE
+    };
 
-      this.setState({isLoading: false})
-    }, 2000)
+    this.updateEvents()
   }
 
-  moveEvent({event, start, end}) {
+  loadPost = (url, data, postOpt) => {
+    let timeout = setTimeout(() => {
+      this.setState({
+        isLoading: true
+      })
+    }, 1000)
+    return post(url, data, postOpt)
+      .catch(e => {
+        clearTimeout(timeout);
+        this.setState({
+          isLoading: false
+        })
+        return Promise.reject(e);
+      })
+      .then(resp => {
+        clearTimeout(timeout);
+        if (_.get(resp, 'status') !== 200) {
+          console.error("can't fetch, error : " + _.get(resp, 'status'))
+          this.setState({
+            isLoading: false
+          })
+          return Promise.reject(resp);
+        }
+        return resp
+      })
+  };
+
+  moveEvent = ({event, start, end}) => {
     const {events} = this.state;
 
     const i = events.indexOf(event);
@@ -57,23 +90,57 @@ class Dnd extends React.Component {
         dateMath.inRange(unAvab.end, start, end, 'minutes')
       )
     ) {
-      nextEvents.splice(i, 1, updatedEvent)
-      // this.setState({isLoading: true});
-      // post request
-      // setTimeout(() => {
-      this.setState({
-        events: nextEvents,
-        isLoading: false
-      })
-      setTimeout(() => toastr.success(
-        `${event.title} was dropped onto ${event.start}`
-      ), 100);
 
-      // }, 2000);
+      this.loadPost('timeslot/saveorupdate', {
+        createdAt: null,
+        updatedAt: null,
+        deletedAt: null,
+        createBy: null,
+        deletedBy: null,
+        endDate: moment.parseZone(end).format(CREATE_TYPE),
+        startDate: moment.parseZone(start).format(CREATE_TYPE),
+        state: null,
+        schedule: null,
+        appointment: null
+      })
+        .then(resp => {
+          // updatedEvent = resp.data
+          nextEvents.splice(i, 1, updatedEvent)
+          this.setState({
+            isLoading: false,
+            events: nextEvents
+          })
+          setTimeout(() => toastr.success(
+            `${event.title} was dropped onto ${event.start}`
+          ), 100);
+        });
     }
     else {
-      toastr.error(`Provider is unavailable`)
+      toastr.error('Provider is unavailable')
     }
+  }
+
+  updateEvents = (calendarState) => {
+    if (calendarState) this.calendarState = calendarState;
+    let start, end;
+    let viewType = this.calendarState.view;
+    if (viewType === 'week') {
+      viewType = 'isoWeek';
+    }
+    start = moment(this.calendarState.date).startOf(viewType)
+    end = moment(this.calendarState.date).endOf(viewType)
+    this.loadPost(
+      'timeslot/bystartandenddate',
+      {
+        enddate: end.format(REQUEST_TYPE),
+        startdate: start.format(REQUEST_TYPE)
+      },
+      {isFormData: true}
+    )
+      .then(resp => this.setState({
+        isLoading: false,
+        events: resp.data.length ? resp.data : events
+      }));
   }
 
   render() {
@@ -92,9 +159,21 @@ class Dnd extends React.Component {
           selectable
           events={this.state.events}
           onEventDrop={this.moveEvent}
-          defaultView='day'
+          defaultView={START_TYPE}
           step={15}
-          defaultDate={new Date(2017, 3, 12)}
+          onNavigate={(date, view) => {
+            if (dateMath.eq(date, this.calendarState.date)) return;
+            this.updateEvents({
+              date,
+              view: view || this.calendarState.view
+            })
+          }}
+          onView={view => {
+            if (dateMath.eq(view, this.calendarState.view)) return;
+            this.calendarState.view = view;
+            this.updateEvents();
+          }}
+          defaultDate={START_DATE}
         />
       </div>
     )
