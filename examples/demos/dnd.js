@@ -29,7 +29,7 @@ class Dnd extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      events: events,
+      events,
       isLoading: true
     }
 
@@ -69,6 +69,9 @@ class Dnd extends React.Component {
   };
 
   moveEvent = ({event, start, end}) => {
+    if (event.background) {
+      return;
+    }
     const {events} = this.state;
 
     const i = events.indexOf(event);
