@@ -4,8 +4,15 @@ import HTML5Backend from 'react-dnd-html5-backend'
 import {DragDropContext} from 'react-dnd'
 import ContentLoader, {Rect} from 'react-content-loader'
 import _ from 'lodash';
+import $ from "jquery";
+window.$ = $;
+window.jquery = $;
+import toastr from 'toastr';
 
 import BigCalendar from 'react-big-calendar'
+import dateMath from 'date-arithmetic';
+
+import dates from '../../src/utils/dates';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.less';
@@ -35,20 +42,38 @@ class Dnd extends React.Component {
     const updatedEvent = {...event, start, end};
 
     const nextEvents = [...events]
-    nextEvents.splice(i, 1, updatedEvent)
-    this.setState({isLoading: true});
-    // post request
-    setTimeout(() => {
+
+    const availabilities = _.filter(events, 'background')
+
+    const simpleEvents = _.filter(events, ev => !ev.background);
+
+    if (
+      availabilities.some(avab =>
+        dateMath.inRange(start, avab.start, avab.end, 'minutes') &&
+        dateMath.inRange(end, avab.start, avab.end, 'minutes')
+      ) &&
+      !simpleEvents.some(unAvab =>
+        dateMath.inRange(unAvab.start, start, end, 'minutes') ||
+        dateMath.inRange(unAvab.end, start, end, 'minutes')
+      )
+    ) {
+      nextEvents.splice(i, 1, updatedEvent)
+      // this.setState({isLoading: true});
+      // post request
+      // setTimeout(() => {
       this.setState({
         events: nextEvents,
         isLoading: false
       })
-      setTimeout(
-        () => window.alert(`${event.title} was dropped onto ${event.start}`),
-        100
-      );
+      setTimeout(() => toastr.success(
+        `${event.title} was dropped onto ${event.start}`
+      ), 100);
 
-    }, 2000);
+      // }, 2000);
+    }
+    else {
+      toastr.error(`Provider is unavailable`)
+    }
   }
 
   render() {

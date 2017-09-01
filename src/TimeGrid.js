@@ -8,6 +8,7 @@ import localizer from './localizer'
 import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
 import DateContentRow from './DateContentRow';
+import BackgroundCells from './BackgroundCells';
 import Header from './Header';
 
 import getWidth from 'dom-helpers/query/width';
@@ -169,13 +170,10 @@ export default class TimeGrid extends Component {
         else
           rangeEvents.push(event)
       }
-    });
-    if (skipAllDay) {
-      rangeEvents = rangeEvents.concat(allDayEvents);
-    }
-    else {
-      allDayEvents.sort((a, b) => sortEvents(a, b, this.props))
-    }
+    })
+
+    allDayEvents.sort((a, b) => sortEvents(a, b, this.props))
+
     let gutterRef = ref => this._gutters[0] = ref && findDOMNode(ref);
 
     return (

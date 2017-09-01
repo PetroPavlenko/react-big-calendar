@@ -40,7 +40,7 @@ let isSibling = (idx1, idx2, { events, startAccessor, endAccessor, min, totalMin
   let event1 = events[idx1]
   let event2 = events[idx2]
 
-  if (!event1 || !event2) return false
+  if (!event1 || !event2 || event1.background || event2.background) return false
 
   let start1 = getSlot(event1, startAccessor, min, totalMin)
   let start2 = getSlot(event2, startAccessor, min, totalMin)
@@ -62,8 +62,13 @@ let isChild = (parentIdx, childIdx, {
     { events, startAccessor, endAccessor, min, totalMin }
   )) return false
 
-  let parentEnd = getSlot(events[parentIdx], endAccessor, min, totalMin)
-  let childStart = getSlot(events[childIdx], startAccessor, min, totalMin)
+  let eventPer = events[parentIdx]
+  let eventChi = events[childIdx]
+
+  if(eventPer || eventChi || eventPer.background || eventChi.background) return false
+
+  let parentEnd = getSlot(eventPer, endAccessor, min, totalMin)
+  let childStart = getSlot(eventChi, startAccessor, min, totalMin)
 
   return parentEnd > childStart
 }
@@ -183,21 +188,38 @@ export default function getStyledEvents ({
       idx, idx + siblings.length + 1, helperArgs
     )
     let nbrOfColumns = Math.max(nbrOfChildColumns, siblings.length) + 1;
-
+    console.log(nbrOfColumns);
     // Set styles to top level events.
     [idx, ...siblings].forEach((eventIdx, siblingIdx) => {
+      let event = events[eventIdx]
+      let style = {};
+      let {top, height} = getYStyles(eventIdx, helperArgs)
       let width = 100 / nbrOfColumns
-      let xAdjustment = width * (nbrOfColumns > 1 ? OVERLAP_MULTIPLIER : 0)
-      let { top, height } = getYStyles(eventIdx, helperArgs)
-
-      styledEvents[eventIdx] = {
-        event: events[eventIdx],
-        style: {
+      if (event.background) {
+        style = {
+          top,
+          height,
+          width: 100,
+          xOffset: 0
+        };
+        styledEvents[eventIdx] = {
+          event,
+          style
+        }
+      }
+      else {
+        let xAdjustment = width * (nbrOfColumns > 1 ? OVERLAP_MULTIPLIER : 0)
+        style = {
           top,
           height,
           width: width + xAdjustment,
           xOffset: (width * siblingIdx) - xAdjustment
-        }
+        };
+      }
+
+      styledEvents[eventIdx] = {
+        event,
+        style
       }
     })
 
